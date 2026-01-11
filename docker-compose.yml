@@ -56,25 +56,22 @@ services:
       timeout: 5s
       retries: 10
 
+  
   cron:
     image: mautic/mautic:6-apache
     container_name: mautic_cron
     depends_on:
       - mautic
     entrypoint: ["/bin/bash", "-lc"]
-    command: >
-      'echo "*/5 * * * * www-data php /var/www/html/bin/console mautic:segments:update --batch-process >> /proc/1/fd/1 2>&1"
-      > /etc/cron.d/mautic &&
-       echo "*/5 * * * * www-data php /var/www/html/bin/console mautic:campaigns:update --batch-process >> /proc/1/fd/1 2>&1"
-      >> /etc/cron.d/mautic &&
-       echo "*/5 * * * * www-data php /var/www/html/bin/console mautic:campaigns:trigger --batch-limit=100 >> /proc/1/fd/1 2>&1"
-      >> /etc/cron.d/mautic &&
-       echo "*/5 * * * * www-data php /var/www/html/bin/console mautic:emails:send --batch-limit=100 >> /proc/1/fd/1 2>&1"
-      >> /etc/cron.d/mautic &&
-       chmod 0644 /etc/cron.d/mautic &&
-       crontab /etc/cron.d/mautic &&
-       touch /var/log/cron.log &&
-       cron -f'
+    command: |
+      echo "*/5 * * * * www-data php /var/www/html/bin/console mautic:segments:update --batch-process >> /proc/1/fd/1 2>&1" > /etc/cron.d/mautic
+      echo "*/5 * * * * www-data php /var/www/html/bin/console mautic:campaigns:update --batch-process >> /proc/1/fd/1 2>&1" >> /etc/cron.d/mautic
+      echo "*/5 * * * * www-data php /var/www/html/bin/console mautic:campaigns:trigger --batch-limit=100 >> /proc/1/fd/1 2>&1" >> /etc/cron.d/mautic
+      echo "*/5 * * * * www-data php /var/www/html/bin/console mautic:emails:send --batch-limit=100 >> /proc/1/fd/1 2>&1" >> /etc/cron.d/mautic
+      chmod 0644 /etc/cron.d/mautic
+      crontab /etc/cron.d/mautic
+      touch /var/log/cron.log
+      cron -f
     volumes:
       - mautic_var:/var/www/html/var
       - mautic_media:/var/www/html/docroot/media

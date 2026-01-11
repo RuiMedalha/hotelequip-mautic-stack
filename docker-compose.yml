@@ -1,0 +1,102 @@
+
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: mautic_db
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${MAUTIC_DB_NAME}
+      MYSQL_USER: ${MAUTIC_DB_USER}
+      MYSQL_PASSWORD: ${MAUTIC_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - mautic_net
+
+  mautic:
+    image: mautic/mautic:6-apache
+    container_name: mautic
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # DB
+      MAUTIC_DB_HOST: db
+      MAUTIC_DB_NAME: ${MAUTIC_DB_NAME}
+      MAUTIC_DB_USER: ${MAUTIC_DB_USER}
+      MAUTIC_DB_PASSWORD: ${MAUTIC_DB_PASSWORD}
+      # App
+      MAUTIC_URL: ${MAUTIC_URL}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES}
+      # PHP tuning
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT}
+      PHP_MAX_INPUT_VARS: ${PHP_MAX_INPUT_VARS}
+      PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME}
+      PHP_UPLOAD_MAX_FILESIZE: ${PHP_UPLOAD_MAX_FILESIZE}
+      PHP_POST_MAX_SIZE: ${PHP_POST_MAX_SIZE}
+      # SMTP (opcional) – descomenta no .env se quiseres já enviar emails
+      # MAUTIC_MAILER_DSN: ${MAUTIC_MAILER_DSN}
+    volumes:
+      - mautic_var:/var/www/html/var
+      - mautic_media:/var/www/html/media
+      - mautic_trans:/var/www/html/translations
+      # IMPORTANTE: NÃO montar /var/www/html/config
+    networks:
+      - mautic_net        # rede da app (com o DB)
+      - proxy_default     # rede do Nginx Proxy Manager
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  cron:
+    image: mautic/mautic:6-apache
+    container_name: mautic_cron
+    depends_on:
+      - mautic
+    entrypoint: ["/bin/bash", "-lc"]
+    command: >
+      'echo "*/5 * * * * www-data php /var/www/html/bin/console mautic:segments:update --batch-process >> /proc/1/fd/1 2>&1"
+      > /etc/cron.d/mautic &&
+       echo "*/5 * * * * www-data php /var/www/html/bin/console mautic:campaigns:update --batch-process >> /proc/1/fd/1 2>&1"
+      >> /etc/cron.d/mautic &&
+       echo "*/5 * * * * www-data php /var/www/html/bin/console mautic:campaigns:trigger --batch-limit=100 >> /proc/1/fd/1 2>&1"
+      >> /etc/cron.d/mautic &&
+       echo "*/5 * * * * www-data php /var/www/html/bin/console mautic:emails:send --batch-limit=100 >> /proc/1/fd/1 2>&1"
+      >> /etc/cron.d/mautic &&
+       chmod 0644 /etc/cron.d/mautic &&
+       crontab /etc/cron.d/mautic &&
+       touch /var/log/cron.log &&
+       cron -f'
+    volumes:
+      - mautic_var:/var/www/html/var
+      - mautic_media:/var/www/html/media
+      - mautic_trans:/var/www/html/translations
+    networks:
+      - mautic_net
+      - proxy_default
+
+networks:
+  mautic_net:
+    driver: bridge
+  proxy_default:
+    external: true   # rede já existente do Nginx Proxy Manager
+
+volumes:
+  db_data:
+  mautic_var:
+  mautic_media:
+  mautic_trans:

@@ -31,6 +31,9 @@ services:
       db:
         condition: service_healthy
     environment:
+      
+      APP_ENV: prod
+      APP_DEBUG: 1
       MAUTIC_DB_HOST: db
       MAUTIC_DB_NAME: ${MAUTIC_DB_NAME}
       MAUTIC_DB_USER: ${MAUTIC_DB_USER}

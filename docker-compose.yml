@@ -1,5 +1,5 @@
 
-version: "3.9"
+
 
 services:
   db:
@@ -31,21 +31,28 @@ services:
       db:
         condition: service_healthy
     environment:
-      
+      # Debug temporário para ver erro detalhado no installer
       APP_ENV: prod
       APP_DEBUG: 1
+
+      # DB
       MAUTIC_DB_HOST: db
       MAUTIC_DB_NAME: ${MAUTIC_DB_NAME}
       MAUTIC_DB_USER: ${MAUTIC_DB_USER}
       MAUTIC_DB_PASSWORD: ${MAUTIC_DB_PASSWORD}
+
+      # App
       MAUTIC_URL: ${MAUTIC_URL}
       MAUTIC_TRUSTED_PROXIES: ${MAUTIC_TRUSTED_PROXIES}
+
+      # PHP tuning
       PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT}
       PHP_MAX_INPUT_VARS: ${PHP_MAX_INPUT_VARS}
       PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME}
       PHP_UPLOAD_MAX_FILESIZE: ${PHP_UPLOAD_MAX_FILESIZE}
       PHP_POST_MAX_SIZE: ${PHP_POST_MAX_SIZE}
-      # SMTP opcional
+
+      # SMTP (opcional)
       # MAUTIC_MAILER_DSN: ${MAUTIC_MAILER_DSN}
     volumes:
       - mautic_var:/var/www/html/var
@@ -58,8 +65,10 @@ services:
       interval: 15s
       timeout: 5s
       retries: 10
+    # OPCIONAL: teste direto sem NPM (http://SEU_IP:8082/installer)
+    ports:
+      - "8082:80"
 
-  
   cron:
     image: mautic/mautic:6-apache
     container_name: mautic_cron
@@ -92,4 +101,3 @@ volumes:
   db_data:
   mautic_var:
   mautic_media:
-``

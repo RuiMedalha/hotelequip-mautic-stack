@@ -1,6 +1,4 @@
 
-
-
 services:
   db:
     image: mysql:8.0
@@ -31,27 +29,23 @@ services:
       db:
         condition: service_healthy
     environment:
-      # Debug temporário para ver erro detalhado no installer
+      # Debug temporário
       APP_ENV: prod
       APP_DEBUG: 1
-
       # DB
       MAUTIC_DB_HOST: db
       MAUTIC_DB_NAME: ${MAUTIC_DB_NAME}
       MAUTIC_DB_USER: ${MAUTIC_DB_USER}
       MAUTIC_DB_PASSWORD: ${MAUTIC_DB_PASSWORD}
-
       # App
       MAUTIC_URL: ${MAUTIC_URL}
       MAUTIC_TRUSTED_PROXIES: ${MAUTIC_TRUSTED_PROXIES}
-
-      # PHP tuning
+      # PHP
       PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT}
       PHP_MAX_INPUT_VARS: ${PHP_MAX_INPUT_VARS}
       PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME}
       PHP_UPLOAD_MAX_FILESIZE: ${PHP_UPLOAD_MAX_FILESIZE}
       PHP_POST_MAX_SIZE: ${PHP_POST_MAX_SIZE}
-
       # SMTP (opcional)
       # MAUTIC_MAILER_DSN: ${MAUTIC_MAILER_DSN}
     volumes:
@@ -65,9 +59,8 @@ services:
       interval: 15s
       timeout: 5s
       retries: 10
-    # OPCIONAL: teste direto sem NPM (http://SEU_IP:8082/installer)
     ports:
-      - "8082:80"
+      - "8082:80"   # acesso direto para teste sem NPM
 
   cron:
     image: mautic/mautic:6-apache
